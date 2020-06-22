@@ -10,34 +10,11 @@ BOOL FileExists(LPCTSTR szPath)
          !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
 }
 
-void _writeLineToFile(HANDLE h){
-char str[] = "Example text testing WriteFile";
-DWORD bytesToWrite = strlen(str);
-DWORD bytesWritten = 0;
-BOOL bfile;
-bfile = WriteFile(h,
-          str,
-          bytesToWrite,
-          &bytesWritten,
-          NULL);
-
-if(bfile == FALSE){
-    std::cout<<"WriteFile Failed "<<GetLastError()<<std::endl;
-}else{
-    std::cout<<"WriteFile Succes!"<<std::endl;
-}
-CloseHandle(h);
-
+DWORD fileSize(HANDLE hFile){
+	return GetFileSize(hFile,NULL);
 }
 
-int main(int argc, char** argv) {
-	LPCSTR fileName = "wynik.txt";
-	std::cout << "Arguments number: " << argc << std::endl;
-
-	for(auto i = 0; i<argc; i++){
-		std::cout << argv[i] << std::endl;
-	}
-	
+HANDLE createFile(LPCSTR fileName){
 	if(FileExists(fileName)){
 		std::cout<<"File Exists"<<std::endl;
 		if(DeleteFileA(fileName)){
@@ -57,8 +34,56 @@ int main(int argc, char** argv) {
 	if(hFile){
 		std::cout<<"File created"<<std::endl;
 	}
-    _writeLineToFile(hFile);
-    
+	return hFile;
+}
+
+
+void writeLineToFile(HANDLE h){
+char str[] = "Example text testing WriteFile and new text";
+DWORD bytesToWrite = strlen(str);
+DWORD bytesWritten = 0;
+BOOL bFile;
+bFile = WriteFile(h,
+          str,
+          bytesToWrite,
+          &bytesWritten,
+          NULL);
+
+if(bFile == FALSE){
+    std::cout<<"WriteFile Failed "<<GetLastError()<<std::endl;
+}else{
+    std::cout<<"WriteFile Succes!"<<std::endl;
+}
+CloseHandle(h);
+
+}
+void readFile(HANDLE file){
+	DWORD bytesRead = 0;
+	char fileContent[60];
+	ReadFile(
+	file,
+	fileContent,
+	fileSize(file),
+	&bytesRead,
+	NULL
+	);
+	
+	for(auto i = 0; i < (signed)strlen(fileContent);i++){
+		std::cout<<fileContent[i]<<std::endl;
+	}
+}
+
+int main(int argc, char** argv) {
+	LPCSTR fileName = "wynik.txt";
+	std::cout << "Arguments number: " << argc << std::endl;
+
+	for(auto i = 0; i<argc; i++){
+		std::cout << argv[i] << std::endl;
+	}
+	
+	HANDLE hFile = createFile(fileName);
+    writeLineToFile(hFile);
+    readFile(hFile);
 }
 
 

@@ -1,6 +1,6 @@
 #include <iostream>
 #include <windows.h>
-
+#define BYTEStoREAD 50
 
 BOOL FileExists(LPCTSTR szPath)
 {
@@ -24,7 +24,7 @@ HANDLE createFile(LPCSTR fileName){
 	
 	HANDLE hFile = CreateFile(
 		fileName,
-		GENERIC_WRITE,
+		GENERIC_ALL,
 		0,
 		NULL,
 		CREATE_NEW,
@@ -57,20 +57,23 @@ if(bFile == FALSE){
 CloseHandle(h);
 
 }
-void readFile(HANDLE file){
-	DWORD bytesRead = 0;
-	char fileContent[60];
-	ReadFile(
-	file,
+void readFile(HANDLE hFile){
+	DWORD loadedBytes = 0;
+	char fileContent[BYTEStoREAD];
+	BOOL bResult;
+	bResult = ReadFile(
+	hFile,
 	fileContent,
-	fileSize(file),
-	&bytesRead,
+	fileSize(hFile),
+	&loadedBytes,
 	NULL
 	);
 	
-	for(auto i = 0; i < (signed)strlen(fileContent);i++){
-		std::cout<<fileContent[i]<<std::endl;
-	}
+	CloseHandle(hFile);
+	std::cout<< "Text from file: "<<std::endl;
+	puts(fileContent);
+	
+	
 }
 
 int main(int argc, char** argv) {

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <windows.h>
-#define BYTEStoREAD 50
+#include <tchar.h> 
+
 
 BOOL FileExists(LPCTSTR szPath)
 {
@@ -10,16 +11,9 @@ BOOL FileExists(LPCTSTR szPath)
          !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
 }
 
-DWORD fileSize(HANDLE hFile){
-	return GetFileSize(hFile,NULL);
-}
-
 HANDLE createFile(LPCSTR fileName){
 	if(FileExists(fileName)){
 		std::cout<<"File Exists"<<std::endl;
-		if(DeleteFileA(fileName)){
-		std::cout<<"File delete"<<std::endl;
-		}
 	}
 	
 	HANDLE hFile = CreateFile(
@@ -27,7 +21,7 @@ HANDLE createFile(LPCSTR fileName){
 		GENERIC_ALL,
 		0,
 		NULL,
-		CREATE_NEW,
+		CREATE_ALWAYS,
 		FILE_ATTRIBUTE_NORMAL,
 		NULL
 	);
@@ -38,30 +32,27 @@ HANDLE createFile(LPCSTR fileName){
 }
 
 
-void writeLineToFile(HANDLE h){
-char str[] = "Example text testing WriteFile and new text";
-DWORD bytesToWrite = strlen(str);
-DWORD bytesWritten = 0;
+bool _writeLineToFile(HANDLE h, TCHAR *str[],int argc){
+auto size = 0;
 BOOL bFile;
-bFile = WriteFile(h,
-          str,
-          bytesToWrite,
+DWORD bytesWritten = 0;
+	 for(int i=0;i<argc;i++){
+	 	size = strlen(str[i]);
+        bFile = WriteFile(h,
+          strcat(str[i], "\n"),
+          size+1,
           &bytesWritten,
           NULL);
+     }
 
-if(bFile == FALSE){
-    std::cout<<"WriteFile Failed "<<GetLastError()<<std::endl;
-}else{
-    std::cout<<"WriteFile Succes!"<<std::endl;
-}
 CloseHandle(h);
-
+return bFile;
 }
-void readFile(HANDLE hFile){
+/*void readFile(HANDLE hFile){
 	DWORD loadedBytes = 0;
 	char fileContent[BYTEStoREAD];
-	BOOL bResult;
-	bResult = ReadFile(
+	
+	ReadFile(
 	hFile,
 	fileContent,
 	fileSize(hFile),
@@ -75,18 +66,17 @@ void readFile(HANDLE hFile){
 	
 	
 }
-
-int main(int argc, char** argv) {
-	LPCSTR fileName = "wynik.txt";
-	std::cout << "Arguments number: " << argc << std::endl;
-
-	for(auto i = 0; i<argc; i++){
-		std::cout << argv[i] << std::endl;
-	}
-	
+*/
+int main(int argc, TCHAR *argv[], TCHAR *envp[]) {
+	LPCSTR fileName = "wynik.txt";	
 	HANDLE hFile = createFile(fileName);
-    writeLineToFile(hFile);
-    readFile(hFile);
+    BOOL writeCompleted = _writeLineToFile(hFile,argv,argc);
+    if(writeCompleted == FALSE){
+    	std::cout<<"WriteFile Failed "<<GetLastError()<<std::endl;
+	}else{
+    	std::cout<<"WriteFile Succes!"<<std::endl;	
+	}	
+    //readFile(hFile);
 }
 
 

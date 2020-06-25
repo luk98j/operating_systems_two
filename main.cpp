@@ -1,7 +1,33 @@
+/**
+ * @file main.cpp
+ * @author Lukasz Jankowski 224816
+ * @date 25.06.2020
+ * @brief EX 1 - Systemy operacyjne II, æwiczenie 1 - LAB
+ */
+
+
 #include <iostream>
 #include <windows.h>
 #include <tchar.h> 
 
+
+BOOL environmentalVariableIsTrue(LPCTSTR environmentalVariable)
+{
+	
+		const DWORD buffSize = 65535;
+    	char buffer[buffSize];
+    	GetEnvironmentVariableA(environmentalVariable, buffer, buffSize);
+    	if(buffer[0]=='T' && buffer[3]=='E')
+    	{
+        std::cout<<buffer<<std::endl;
+        return true;
+    	}
+    	else
+    	{
+        return false;
+    	}
+		
+}
 
 BOOL FileExists(LPCTSTR szPath)
 {
@@ -48,25 +74,43 @@ DWORD bytesWritten = 0;
 CloseHandle(h);
 return bFile;
 }
-/*void readFile(HANDLE hFile){
-	DWORD loadedBytes = 0;
-	char fileContent[BYTEStoREAD];
-	
-	ReadFile(
-	hFile,
-	fileContent,
-	fileSize(hFile),
-	&loadedBytes,
-	NULL
-	);
-	
-	CloseHandle(hFile);
-	std::cout<< "Text from file: "<<std::endl;
-	puts(fileContent);
-	
-	
+bool _openFileInNotepad(std::string name)
+{
+	environmentalVariableIsTrue("NOTEPAD");
+	STARTUPINFO StartInfo;
+	PROCESS_INFORMATION ProcessInfo;
+
+  	memset(&StartInfo, 0, sizeof(StartInfo));
+  	memset(&StartInfo, 0, sizeof(ProcessInfo));
+
+  	StartInfo.cb      = sizeof(StartInfo);
+
+  	StartInfo.wShowWindow = SW_NORMAL;
+  	StartInfo.dwFlags    |= STARTF_USESHOWWINDOW;
+  	
+  	std::string notepad= "notepad ";
+  	char *program= new char[notepad.length()+1];
+  	strcpy(program,notepad.c_str());
+  	const char *carray=  name.c_str();
+  	TCHAR filename[255];		
+  	_tcscpy(filename, _T(strcat(program,carray)));
+  	if(!CreateProcess(0,
+	  filename,
+	  NULL,
+	  NULL,
+	  TRUE,
+	  CREATE_NEW_PROCESS_GROUP,
+	  NULL,
+	  NULL,
+	  &StartInfo,
+	  &ProcessInfo)){
+	  	 std::cout << "Something went wrong" << std::endl;
+	  	 return false;
+	  }else{
+	  	return true;
+	  }
+  	
 }
-*/
 int main(int argc, TCHAR *argv[], TCHAR *envp[]) {
 	LPCSTR fileName = "wynik.txt";	
 	HANDLE hFile = createFile(fileName);
@@ -76,7 +120,13 @@ int main(int argc, TCHAR *argv[], TCHAR *envp[]) {
 	}else{
     	std::cout<<"WriteFile Succes!"<<std::endl;	
 	}	
-    //readFile(hFile);
+    BOOL openInNotepad = _openFileInNotepad(fileName);
+    if(openInNotepad == FALSE){
+    	std::cout<<"Open in Notepad - fail: "<<GetLastError()<<std::endl;
+	}else{
+    	std::cout<<"Open in Notepad - success"<<std::endl;
+	}
+    
 }
 
 

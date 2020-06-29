@@ -1,7 +1,8 @@
 #include <iostream>
 #include <fstream> 
 #include <windows.h>
-
+#include <tchar.h>
+#include <thread>
 
 HANDLE createFile(){
 
@@ -42,34 +43,8 @@ CloseHandle(h);
 return bFile;
 }
 
-void CreateAndSave(){
-		HANDLE hFile = createFile();
+int main(int argc, TCHAR *argv[], TCHAR *envp[]) {
+	HANDLE hFile = createFile();
 	_writeLineToFile(hFile);
 }
 
-int main(int argc, TCHAR *argv[], TCHAR *envp[]){
-	
-	PROCESS_INFORMATION pi1; 
-	char cmd1[80] = "Untitled1 -mode CreateAndSave";
-	
- 	STARTUPINFO si1 = {
- 		sizeof(si1), NULL, NULL,(LPTSTR) "createAndSave", 500, 370,
- 		420, 310, 
- 		0, 0,
- 		0x0d, 
- 		STARTF_USEFILLATTRIBUTE | STARTF_USEPOSITION | STARTF_USESIZE,
- 		0, 0, NULL, NULL, NULL }; 
- 		
- 		
- 		CreateProcess(0,cmd1, NULL,NULL,0, CREATE_NEW_CONSOLE, NULL,NULL, &si1, &pi1);
- 	
- 		std::string cas= "CreateAndSave";
- 		for(int i=0;i<argc;i++){
- 			if(argv[i]==(TCHAR*)cas.c_str()){
- 			CreateAndSave();
-		 	}
-	 	}
- 		
- 	
-	
-}

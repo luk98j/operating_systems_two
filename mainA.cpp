@@ -4,7 +4,7 @@
 #include <tchar.h>
 int main(int argc, TCHAR *argv[], TCHAR *envp[]){
 	PROCESS_INFORMATION pi1; 
-	std::string cmd1 = "rand.exe 10"; // argument ile liczb ma byc wylosowanych
+	std::string cmd1 = "randA.exe 10"; // argument ile liczb ma byc wylosowanych
  	STARTUPINFO si1 ;
  	ZeroMemory( &si1, sizeof(si1) );
     si1.cb = sizeof(si1);

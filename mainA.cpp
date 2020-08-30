@@ -3,6 +3,11 @@
 #include <windows.h>
 #include <tchar.h>
 int main(int argc, TCHAR *argv[], TCHAR *envp[]){
+	LARGE_INTEGER freq, perf_start, perf_end;
+	float freqms;
+	QueryPerformanceFrequency(&freq);
+	freqms = freq.QuadPart / 1000.0f;
+	QueryPerformanceCounter(&perf_start);
 	PROCESS_INFORMATION pi1; 
 	std::string cmd1 = "randA.exe 10"; // argument ile liczb ma byc wylosowanych
  	STARTUPINFO si1 ;
@@ -13,4 +18,8 @@ int main(int argc, TCHAR *argv[], TCHAR *envp[]){
     { 
        std::cout<<("The process could not be started...")<<std::endl;
     }  
+    WaitForSingleObject(pi1.hProcess,INFINITE);
+    QueryPerformanceCounter(&perf_end);
+    float elapsedC = (perf_end.QuadPart - perf_start.QuadPart) / freqms;
+    std::cout<<"The application execution time is: "<<elapsedC<<<" ms"<std::endl;
 }

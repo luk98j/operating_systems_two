@@ -39,7 +39,7 @@ int main(int argc, TCHAR *argv[], TCHAR *envp[]){
 			}
 		int* numbers = new int[nArg];
 		std::cout<<"Start of second process"<<std::endl;
-		Sleep(3000);
+		Sleep(1000);
 		char  *pMapFile = (char *)MapViewOfFile(hMapFile, FILE_MAP_READ, 0,0, 0);
 		int len = strlen(pMapFile);
 		char *array = new char[len];

@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 #define MAX_THREADS 3
+#define MAX_SEM_COUNT 1
 
 DWORD WINAPI avgFunction(LPVOID lpParameter);
 DWORD WINAPI minFunction(LPVOID lpParameter);
@@ -17,7 +18,9 @@ typedef struct MyData{
 	int nData;
 	int * numbers;
 }MYDATA, *PMYDATA;
-
+CRITICAL_SECTION CriticalSection; 
+HANDLE ghSemaphore;
+BOOL bSemaphore = FALSE;
 int main(int argc, TCHAR *argv[], TCHAR *envp[]){
 	PMYDATA pDataArray[MAX_THREADS];
 	HANDLE  hThreadArray[MAX_THREADS];
@@ -27,6 +30,10 @@ int main(int argc, TCHAR *argv[], TCHAR *envp[]){
 	param[str.size()]=0;
 	std::copy(str.begin(),str.end(),param);
 	if(argv[1]==str){
+		if (!InitializeCriticalSectionAndSpinCount(&CriticalSection, 
+        0x00000400) ) {
+        	return 0;
+		}
 		HANDLE hMapFile;
 		std::string str;
 		std::string delimiter = " ";
@@ -41,7 +48,7 @@ int main(int argc, TCHAR *argv[], TCHAR *envp[]){
 			}
 		int* numbers = new int[nArg];
 		std::cout<<"Start of second process"<<std::endl;
-		Sleep(3000);
+		Sleep(1000);
 		char  *pMapFile = (char *)MapViewOfFile(hMapFile, FILE_MAP_READ, 0,0, 0);
 		int len = strlen(pMapFile);
 		char *array = new char[len];
@@ -57,10 +64,17 @@ int main(int argc, TCHAR *argv[], TCHAR *envp[]){
 		    str.erase(0, pos + delimiter.length());
 		    i++;
 		}
+		
+		ghSemaphore = CreateSemaphore( NULL, 0, MAX_SEM_COUNT, "SEMAPHORE");  
+        if (ghSemaphore == NULL) 
+	    {
+	        std::cout<<"CreateSemaphore error: "<<GetLastError()<<std::endl;
+	        return 1;
+	    }
+	    
 		for( int i=0; i<MAX_THREADS; i++ ){
 			pDataArray[i] = (PMYDATA) HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY,
                 	sizeof(MYDATA));
-                	
             if( pDataArray[i] == NULL ){
            		std::cout<<"Error with allocation"<<std::endl;
             	ExitProcess(2);
@@ -100,8 +114,10 @@ int main(int argc, TCHAR *argv[], TCHAR *envp[]){
 		       std::cout<<"Error with thread "+i<<std::endl;
 		       ExitProcess(3);
 		    }
-		    WaitForSingleObject(hThreadArray[i],dwThreadIdArray[i]);
+		    
+		    //WaitForSingleObject(hThreadArray[i],dwThreadIdArray[i]);
 		}
+		ReleaseSemaphore(ghSemaphore, 1, NULL);  
 		WaitForMultipleObjects(MAX_THREADS, hThreadArray, TRUE, INFINITE);
 
 	    for(int i=0; i<MAX_THREADS; i++)
@@ -114,7 +130,10 @@ int main(int argc, TCHAR *argv[], TCHAR *envp[]){
 	        }
 	    }
 		UnmapViewOfFile(pMapFile);
+		CloseHandle(ghSemaphore);
 		CloseHandle(hMapFile);
+		DeleteCriticalSection(&CriticalSection);
+		Sleep(5000);
 	}
 	
 	else{
@@ -133,7 +152,6 @@ int main(int argc, TCHAR *argv[], TCHAR *envp[]){
 		return 1; 
 		}
 	PROCESS_INFORMATION pi1; 
-	//std::string cmd1 = "rand.exe runSecondProcess " + hMapFile;
 	char cmd1[128];
 	sprintf(cmd1, "randB.exe runSecondProcess %p %d", hMapFile,arg);
  	STARTUPINFO si1 ;
@@ -154,6 +172,9 @@ int main(int argc, TCHAR *argv[], TCHAR *envp[]){
 
 
 DWORD WINAPI avgFunction(LPVOID lpParameter){
+	EnterCriticalSection(&CriticalSection); 
+	WaitForSingleObject(ghSemaphore, INFINITE); 
+	ghSemaphore = OpenSemaphore(SEMAPHORE_ALL_ACCESS | SYNCHRONIZE ,FALSE,"SEMAPHORE");
 	PMYDATA pDataArray = (PMYDATA)lpParameter;
 	int nArg = pDataArray->nData;
 	int * numbers = pDataArray->numbers;	
@@ -164,10 +185,20 @@ DWORD WINAPI avgFunction(LPVOID lpParameter){
 	}
 	double avg = (double) sum/nArg;
 	std::cout<<"Average is: "<< avg<<std::endl;
-	Sleep(3000);
+	bSemaphore = ReleaseSemaphore(ghSemaphore, 1, NULL);
+	if (!bSemaphore)
+		{
+			std::cout<<"Error avgfunc: "<<GetLastError()<<std::endl;
+			return -1;
+		}
+	LeaveCriticalSection(&CriticalSection);
 	return 0;
 }
+
 DWORD WINAPI minFunction(LPVOID lpParameter){
+	EnterCriticalSection(&CriticalSection); 
+	WaitForSingleObject(ghSemaphore, INFINITE); 
+	ghSemaphore = OpenSemaphore(SEMAPHORE_ALL_ACCESS,FALSE | SYNCHRONIZE , "SEMAPHORE");
 	PMYDATA pDataArray = (PMYDATA)lpParameter;
 	int nArg = pDataArray->nData;
 	int * numbers = pDataArray->numbers;	
@@ -178,10 +209,20 @@ DWORD WINAPI minFunction(LPVOID lpParameter){
       }
    	}
 	std::cout<<"Minimum value is: "<< min<<std::endl;
-	Sleep(3000);
+	bSemaphore = ReleaseSemaphore(ghSemaphore, 1, NULL);
+	if (!bSemaphore)
+		{
+			std::cout<<"Error minfunc: "<<GetLastError()<<std::endl;
+			return -1;
+		}
+	LeaveCriticalSection(&CriticalSection);
 	return 0;
 }
+
 DWORD WINAPI maxFunction(LPVOID lpParameter){
+	EnterCriticalSection(&CriticalSection); 
+	WaitForSingleObject(ghSemaphore, INFINITE); 
+	ghSemaphore = OpenSemaphore(SEMAPHORE_ALL_ACCESS | SYNCHRONIZE , FALSE, "SEMAPHORE");
 	PMYDATA pDataArray = (PMYDATA)lpParameter;
 	int nArg = pDataArray->nData;
 	int * numbers = pDataArray->numbers;	
@@ -192,7 +233,13 @@ DWORD WINAPI maxFunction(LPVOID lpParameter){
       }
    	}
 	std::cout<<"Maximum value is: "<< max<<std::endl;
-	Sleep(3000);
+	bSemaphore = ReleaseSemaphore(ghSemaphore, 1, NULL);
+	if (!bSemaphore)
+		{
+			std::cout<<"Error maxfunc: "<<GetLastError()<<std::endl;
+			return -1;
+		}
+	LeaveCriticalSection(&CriticalSection);
 	return 0;
 }
 HANDLE createFile(){

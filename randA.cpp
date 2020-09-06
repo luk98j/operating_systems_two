@@ -4,25 +4,22 @@
 #include <tchar.h>
 #include <stdio.h>
 
-#define MAX_THREADS 3
+#define MAX_THREADS 1
 #define MAX_SEM_COUNT 1
 
-DWORD WINAPI avgFunction(LPVOID lpParameter);
-DWORD WINAPI minFunction(LPVOID lpParameter);
-DWORD WINAPI maxFunction(LPVOID lpParameter);
-HANDLE createFileForResult();
+DWORD WINAPI mathFunction(LPVOID lpParameter);
 HANDLE createFile();
-bool _writeLineToFileForResultString(HANDLE h, std::string value);
+HANDLE createFileForResult();
 int * randNumbers(int n);
 bool _writeLineToFile(HANDLE h, int n);
 bool _writeLineToFileForResult(HANDLE h, int n);
+bool _writeLineToFileForResultString(HANDLE h, std::string value);
 typedef struct MyData{
 	int nData;
 	int * numbers;
 }MYDATA, *PMYDATA;
 CRITICAL_SECTION CriticalSection; 
 HANDLE ghSemaphore;
-BOOL bSemaphore = FALSE;
 HANDLE gMutex = NULL;
 HANDLE file;
 int main(int argc, TCHAR *argv[], TCHAR *envp[]){
@@ -39,12 +36,12 @@ int main(int argc, TCHAR *argv[], TCHAR *envp[]){
         	return 0;
 		}
 		std::cout<<"Start of second process"<<std::endl;
-		HANDLE hMutex = CreateMutex(NULL, FALSE, "MUTEX");
+		HANDLE hMutex = CreateMutex(NULL, FALSE, "MUTEXA");
 		if(hMutex){
 		 	std::cout<<"OpenMutex(): "<<GetLastError()<<std::endl;
 		 }
 		WaitForSingleObject(hMutex,INFINITE);
-		HANDLE hMapFile;	
+		HANDLE hMapFile;
 		std::string str;
 		std::string delimiter = " ";
 		size_t pos = 0;
@@ -57,7 +54,8 @@ int main(int argc, TCHAR *argv[], TCHAR *envp[]){
 			nArg = atoi(argv[3]);
 			repeatArg = atoi(argv[4]);
 			secondsArg = atoi(argv[5]);
-			}
+		}
+		
 		int* numbers = new int[repeatArg * nArg];
 		char  *pMapFile = (char *)MapViewOfFile(hMapFile, FILE_MAP_READ, 0,0, 0);
 		int len = strlen(pMapFile);
@@ -74,7 +72,7 @@ int main(int argc, TCHAR *argv[], TCHAR *envp[]){
 		    str.erase(0, pos + delimiter.length());
 		    j++;
 		}
-		ghSemaphore = CreateSemaphore( NULL, 1, MAX_SEM_COUNT, "SEMAPHORE");  
+		ghSemaphore = CreateSemaphore( NULL, 1, MAX_SEM_COUNT, "SEMAPHOREA");  
         if (ghSemaphore == NULL) 
 	    {
 	        std::cout<<"CreateSemaphore error: "<<GetLastError()<<std::endl;
@@ -101,50 +99,32 @@ int main(int argc, TCHAR *argv[], TCHAR *envp[]){
 			for( int k=0; k<MAX_THREADS; k++ ){
 				pDataArray[k] = (PMYDATA) HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY,
 	                	sizeof(MYDATA));
+	                	
 	            if( pDataArray[k] == NULL ){
 	           		std::cout<<"Error with allocation"<<std::endl;
 	            	ExitProcess(2);
 	        	}
+	        	
 	        	pDataArray[k]->nData = nArg;
 	        	pDataArray[k]->numbers = tempNumbers;
-	        	
-	        	if(k==0){
-	        		auto s = std::to_string(i+1);
-			    	_writeLineToFileForResultString(file, s);
-			    	_writeLineToFileForResultString(file, " ");
-		        	hThreadArray[k] = CreateThread( 
-		            NULL,                   
-		            0,                      
-		            avgFunction,       
-		            pDataArray[k],          
-		            0,                      
-		            &dwThreadIdArray[k]);  
-	        	}else if(k==1){
-	        		hThreadArray[k] = CreateThread( 
-		            NULL,                   
-		            0,                      
-		            minFunction,       
-		            pDataArray[k],         
-		            0,                      
-		            &dwThreadIdArray[k]);
-				}else if(k==2){
-	        		hThreadArray[k] = CreateThread( 
-		            NULL,                   
-		            0,                      
-		            maxFunction,       
-		            pDataArray[k],          
-		            0,                      
-		            &dwThreadIdArray[k]);
-				}	
+	        	auto s = std::to_string(i+1);
+			    _writeLineToFileForResultString(file, s);
+			    _writeLineToFileForResultString(file, " ");
+	        	hThreadArray[k] = CreateThread( 
+	            NULL,                   
+	            0,                      
+	            mathFunction,       
+	            pDataArray[k],         
+	            0,                     
+	            &dwThreadIdArray[k]);
 	            if (hThreadArray[k] == NULL) 
 			    {
-			       std::cout<<"Error with thread "+i<<std::endl;
+			       std::cout<<"Error with thread "+k<<std::endl;
 			       ExitProcess(3);
 			    }
 			    WaitForSingleObject(hThreadArray[k],dwThreadIdArray[k]);
 			}
 			WaitForMultipleObjects(MAX_THREADS, hThreadArray, TRUE, INFINITE);
-		
 		    for(int l=0; l<MAX_THREADS; l++)
 		    {
 	        	CloseHandle(hThreadArray[l]);
@@ -162,7 +142,6 @@ int main(int argc, TCHAR *argv[], TCHAR *envp[]){
 		CloseHandle(hMutex);
 		DeleteCriticalSection(&CriticalSection);
 		Sleep(5000);
-		
 	}
 	
 	else{
@@ -177,21 +156,21 @@ int main(int argc, TCHAR *argv[], TCHAR *envp[]){
     sa.lpSecurityDescriptor = NULL;
     sa.bInheritHandle = TRUE;
     DWORD sizeF = arg*repeatArg*sizeof(int);
-    hMapFile = CreateFileMapping(hFile, &sa, PAGE_READWRITE,0, sizeF, "MappFile");
+    hMapFile = CreateFileMapping(hFile, &sa, PAGE_READWRITE,0, sizeF, "MappFileA");
     if(hMapFile==NULL){
 	 	std::cout<<"CreateFileMapping error:"<<GetLastError()<<std::endl;
 		return 1; 
 		}
 	PROCESS_INFORMATION pi1; 
 	char cmd1[128];
-	sprintf(cmd1, "randB.exe runSecondProcess %p %d %d %d", hMapFile,arg, repeatArg, secondsArg);
+	sprintf(cmd1, "randA.exe runSecondProcess %p %d %d %d", hMapFile,arg, repeatArg, secondsArg);
  	STARTUPINFO si1 ;
  	ZeroMemory( &si1, sizeof(si1) );
     si1.cb = sizeof(si1);
     ZeroMemory( &pi1, sizeof(pi1) );
-    gMutex = CreateMutex(NULL, FALSE, "MUTEX");
+    gMutex = CreateMutex(NULL, FALSE, "MUTEXA");
     WaitForSingleObject(gMutex,INFINITE);
-     if (gMutex == NULL) 
+    if (gMutex == NULL) 
     {
     	std::cout<<"CreateMutex error: "<<GetLastError()<<std::endl;
         return 1;
@@ -200,7 +179,6 @@ int main(int argc, TCHAR *argv[], TCHAR *envp[]){
 	{ 
 	    std::cout<<("The process could not be started...")<<std::endl;
 	}  
-		
 	for(int i=0; i<repeatArg;i++){
 		_writeLineToFile(hFile,arg);
 		Sleep(secondsArg * 1000);
@@ -214,8 +192,8 @@ int main(int argc, TCHAR *argv[], TCHAR *envp[]){
 }
 
 
-DWORD WINAPI avgFunction(LPVOID lpParameter){ 
-	HANDLE hSemaphore = OpenSemaphore(SEMAPHORE_ALL_ACCESS | SYNCHRONIZE,FALSE,"SEMAPHORE");
+DWORD WINAPI mathFunction(LPVOID lpParameter){
+	HANDLE hSemaphore = OpenSemaphore(SEMAPHORE_ALL_ACCESS | SYNCHRONIZE,FALSE,"SEMAPHOREA");
 	WaitForSingleObject(hSemaphore,INFINITE);
 	PMYDATA pDataArray = (PMYDATA)lpParameter;
 	int nArg = pDataArray->nData;
@@ -224,83 +202,52 @@ DWORD WINAPI avgFunction(LPVOID lpParameter){
 	for(int i=0;i<nArg;i++){
 		sum += numbers[i];
 	}
-	double avg = (double) sum/nArg;
-	_writeLineToFileForResultString(file, "\t");
-	BOOLEAN isWritten =_writeLineToFileForResult(file,avg);
-	if(!isWritten){
-   		std::cout<<"Error maxfunc: "<<GetLastError()<<std::endl;
-	}
-	_writeLineToFileForResultString(file, "\t");
-	std::cout<<"Average is: "<< avg<<std::endl;
-	bSemaphore = ReleaseSemaphore(hSemaphore, 1, NULL);
-	if (!bSemaphore)
-		{
-			std::cout<<"Error avgfunc: "<<GetLastError()<<std::endl;
-			return -1;
-		}
-	return 0;
-}
-
-DWORD WINAPI minFunction(LPVOID lpParameter){
-	HANDLE hSemaphore = OpenSemaphore(SEMAPHORE_ALL_ACCESS,FALSE | SYNCHRONIZE , "SEMAPHORE");
-	WaitForSingleObject(hSemaphore,INFINITE);
-	PMYDATA pDataArray = (PMYDATA)lpParameter;
-	int nArg = pDataArray->nData;
-	int * numbers = pDataArray->numbers;	
 	int min = numbers[0];
    	for(int i=0; i<nArg; i++) {
       if(min>numbers[i]) {
          min=numbers[i];
       }
    	}
-   	BOOLEAN isWritten =_writeLineToFileForResult(file,min);
-   	if(!isWritten){
-   		std::cout<<"Error maxfunc: "<<GetLastError()<<std::endl;
-	}
-	_writeLineToFileForResultString(file, "\t");
-	std::cout<<"Minimum value is: "<< min<<std::endl;
-	bSemaphore = ReleaseSemaphore(hSemaphore, 1, NULL);
-	if (!bSemaphore)
-		{
-			std::cout<<"Error minfunc: "<<GetLastError()<<std::endl;
-			return -1;
-		}
-	return 0;
-}
-
-DWORD WINAPI maxFunction(LPVOID lpParameter){
-	HANDLE hSemaphore = OpenSemaphore(SEMAPHORE_ALL_ACCESS | SYNCHRONIZE , FALSE, "SEMAPHORE");
-	WaitForSingleObject(hSemaphore,INFINITE);
-	PMYDATA pDataArray = (PMYDATA)lpParameter;
-	int nArg = pDataArray->nData;
-	int * numbers = pDataArray->numbers;	
    	int max = numbers[0];
    	for(int i=0; i<nArg; i++) {
       if(max<numbers[i]) {
          max=numbers[i];
       }
    	}
-   	BOOLEAN isWritten = _writeLineToFileForResult(file,max);
-   	if(!isWritten){
-   		std::cout<<"Error maxfunc: "<<GetLastError()<<std::endl;
+	double avg = (double) sum/nArg;
+	_writeLineToFileForResultString(file, "\t");
+	BOOLEAN isWritten =_writeLineToFileForResult(file,avg);
+	if(!isWritten){
+   		std::cout<<"Error: "<<GetLastError()<<std::endl;
 	}
 	_writeLineToFileForResultString(file, "\t");
-	BOOLEAN isWrittenv2 = _writeLineToFileForResultString(file, "\n");
-	if(!isWrittenv2){
-   		std::cout<<"Error maxfunc: "<<GetLastError()<<std::endl;
+	isWritten =_writeLineToFileForResult(file,min);
+   	if(!isWritten){
+   		std::cout<<"Error: "<<GetLastError()<<std::endl;
 	}
+	_writeLineToFileForResultString(file, "\t");
+	isWritten = _writeLineToFileForResult(file,max);
+   	if(!isWritten){
+   		std::cout<<"Error: "<<GetLastError()<<std::endl;
+	}
+	_writeLineToFileForResultString(file, "\n");
+	std::cout<<"Average is: "<< avg<<std::endl;
+	std::cout<<"Minimum value is: "<< min<<std::endl;
 	std::cout<<"Maximum value is: "<< max<<std::endl;
-	bSemaphore = ReleaseSemaphore(hSemaphore, 1, NULL);
+	
+	BOOL bSemaphore = ReleaseSemaphore(hSemaphore, 1, NULL);
 	if (!bSemaphore)
 		{
-			std::cout<<"Error maxfunc: "<<GetLastError()<<std::endl;
+			std::cout<<"Error mathFunction: "<<GetLastError()<<std::endl;
+			Sleep(5000);
 			return -1;
 		}
 	return 0;
 }
+
 HANDLE createFile(){
 	HANDLE hFile = CreateFile(
-		TEXT("log.txt"),
+		TEXT("rand.txt"),
 		GENERIC_READ | GENERIC_WRITE,
 		FILE_SHARE_WRITE | FILE_SHARE_READ,
 		NULL,
@@ -313,11 +260,10 @@ HANDLE createFile(){
 	}
 	return hFile;
 }
-
 HANDLE createFileForResult(){
 
 	HANDLE hFile = CreateFile(
-		TEXT("result.txt"),
+		TEXT("wynik.txt"),
 		GENERIC_READ | GENERIC_WRITE,
 		FILE_SHARE_WRITE | FILE_SHARE_READ,
 		NULL,
@@ -339,6 +285,7 @@ int * randNumbers(int n){
 	}
 	return numbers;
 }
+
 
 bool _writeLineToFile(HANDLE h, int n){
 	int* numbers = randNumbers(n);
@@ -399,4 +346,3 @@ bool _writeLineToFileForResultString(HANDLE h, std::string value){
 		return false;
 	}
 }
-

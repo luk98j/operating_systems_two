@@ -1,0 +1,13 @@
+Total numbers: 100 | Version: Multithreads | Machine: 8664 | Replies: 10 | Pause: 3
+
+Nr	Avg	Min	Max 
+1 	50 	1 	79 
+2 	52 	6 	96 
+3 	48 	3 	96 
+4 	56 	13 	100 
+5 	38 	4 	74 
+6 	48 	24 	79 
+7 	48 	7 	91 
+8 	44 	2 	94 
+9 	47 	9 	85 
+10 	38 	19 	83 
